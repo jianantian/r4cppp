@@ -50,11 +50,13 @@ impl Node {
                 None => break,
                 Some(node) => {
                     let v_node = node.borrow();
-                    f(v_node.name);
-                    seen.insert(v_node.name);
-                    for n in &v_node.edges {
-                        if !seen.contains(&n.borrow().name) {
-                            visit_queue.push_back(n.clone());
+                    if !seen.contains(v_node.name) {
+                        f(v_node.name);
+                        seen.insert(v_node.name);
+                        for n in &v_node.edges {
+                            if !seen.contains(&n.borrow().name) {
+                                visit_queue.push_back(n.clone());
+                            }
                         }
                     }
                 }

@@ -43,12 +43,14 @@ impl<'a> Node<'a> {
             match visit_queue.pop_front() {
                 None => break,
                 Some(node) => {
-                    f(node.name);
-                    seen.insert(node.name);
-                    unsafe {
-                        for n in &(*node.edges.get()) {
-                            if !seen.contains(n.name) {
-                                visit_queue.push_back(n);
+                    if !seen.contains(node.name) {
+                        f(node.name);
+                        seen.insert(node.name);
+                        unsafe {
+                            for n in &(*node.edges.get()) {
+                                if !seen.contains(n.name) {
+                                    visit_queue.push_back(n);
+                                }
                             }
                         }
                     }
