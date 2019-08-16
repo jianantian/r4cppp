@@ -6,3 +6,6 @@ authors = ["nrc <ncameron@mozilla.com>"]
 [[bin]]
 name = "graphs"
 path = "src/mod.rs"
+
+[dependencies]
+typed-arena = "1.5.0"

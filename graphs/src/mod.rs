@@ -1,8 +1,9 @@
 #![feature(rustc_private)]
 
-extern crate arena;
+extern crate typed_arena;
 
 mod rc_graph;
+mod ref_arena;
 mod ref_graph;
 
 fn main() {
@@ -10,4 +11,6 @@ fn main() {
     rc_graph::main();
     println!("\n&Node and UnsafeCell:");
     ref_graph::main();
+    println!("\n&Node and RefCell:");
+    ref_arena::main();
 }

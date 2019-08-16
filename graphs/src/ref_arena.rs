@@ -1,18 +1,18 @@
-use std::cell::UnsafeCell;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use typed_arena::Arena;
 
 struct Node<'a> {
     name: &'static str,
-    edges: UnsafeCell<Vec<&'a Node<'a>>>,
+    edges: RefCell<Vec<&'a Node<'a>>>,
 }
 
 impl<'a> Node<'a> {
     fn new<'b>(name: &'static str, arena: &'b Arena<Node<'b>>) -> &'b Node<'b> {
         arena.alloc(Node {
             name: name,
-            edges: UnsafeCell::new(Vec::new()),
+            edges: RefCell::new(Vec::new()),
         })
     }
 
@@ -25,10 +25,8 @@ impl<'a> Node<'a> {
         }
         f(self.name);
         seen.insert(self.name);
-        unsafe {
-            for n in &(*self.edges.get()) {
-                n.dfs_traverse(f, seen);
-            }
+        for n in self.edges.borrow().iter() {
+            n.dfs_traverse(f, seen);
         }
     }
 
@@ -36,20 +34,17 @@ impl<'a> Node<'a> {
     where
         F: Fn(&'static str),
     {
-        let mut visit_queue: VecDeque<&'a Node> = VecDeque::new();
+        let mut visit_queue: VecDeque<&'a Node<'a>> = VecDeque::new();
         visit_queue.push_back(self);
-
         loop {
             match visit_queue.pop_front() {
                 None => break,
                 Some(node) => {
                     f(node.name);
-                    seen.insert(node.name);
-                    unsafe {
-                        for n in &(*node.edges.get()) {
-                            if !seen.contains(n.name) {
-                                visit_queue.push_back(n);
-                            }
+                    seen.insert(&node.name);
+                    for n in node.edges.borrow().iter() {
+                        if !seen.contains(n.name) {
+                            visit_queue.push_back(n);
                         }
                     }
                 }
@@ -58,7 +53,7 @@ impl<'a> Node<'a> {
     }
 
     fn first(&'a self) -> &'a Node<'a> {
-        unsafe { (*self.edges.get())[0] }
+        self.edges.borrow()[0]
     }
 }
 
@@ -75,15 +70,13 @@ fn init<'a>(arena: &'a Arena<Node<'a>>) -> &'a Node<'a> {
     let e = Node::new("E", arena);
     let f = Node::new("F", arena);
 
-    unsafe {
-        (*root.edges.get()).push(b);
-        (*root.edges.get()).push(c);
-        (*root.edges.get()).push(d);
+    root.edges.borrow_mut().push(b);
+    root.edges.borrow_mut().push(c);
+    root.edges.borrow_mut().push(d);
 
-        (*c.edges.get()).push(e);
-        (*c.edges.get()).push(f);
-        (*c.edges.get()).push(root);
-    }
+    c.edges.borrow_mut().push(e);
+    c.edges.borrow_mut().push(f);
+    c.edges.borrow_mut().push(root);
 
     root
 }

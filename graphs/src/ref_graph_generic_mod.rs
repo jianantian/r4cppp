@@ -2,20 +2,20 @@
 
 use std::cell::UnsafeCell;
 use std::collections::HashSet;
-use arena::TypedArena;
+use typed_arena::Arena;
 
 // Module is parameterised with the lifetime of the graph.
 mod graph<'a> {
     struct Node {
-        datum: &'static str,
+        name: &'static str,
         // The module-level lifetime is used for the lifetime of each Node.
         edges: UnsafeCell<Vec<&'a Node>>,
     }
 
     impl Node {
-        fn new(datum: &'static str, arena: &'a TypedArena<Node>) -> &'a Node {
+        fn new(name: &'static str, arena: &'a Arena<Node>) -> &'a Node {
             arena.alloc(Node {
-                datum: datum,
+                name: name,
                 edges: UnsafeCell::new(Vec::new()),
             })
         }
@@ -23,11 +23,11 @@ mod graph<'a> {
         fn traverse<F>(&self, f: &F, seen: &mut HashSet<&'static str>)
             where F: Fn(&'static str)
         {
-            if seen.contains(&self.datum) {
+            if seen.contains(&self.name) {
                 return;
             }
-            f(self.datum);
-            seen.insert(self.datum);
+            f(self.name);
+            seen.insert(self.name);
             for n in &self.edges {
                 unsafe {
                     for n in &(*self.edges.get()) {
@@ -47,10 +47,10 @@ mod graph<'a> {
     // It would be nice if we could rely on lifetime elision and remove the `'a`
     // on the `foo` and `init` functions.
     fn foo(node: &'a Node) {
-        println!("foo: {}", node.datum);
+        println!("foo: {}", node.name);
     }
 
-    fn init(arena: &'a TypedArena<Node>) -> &'a Node {
+    fn init(arena: &'a Arena<Node>) -> &'a Node {
         let root = Node::new("A", arena);
 
         let b = Node::new("B", arena);
@@ -74,7 +74,7 @@ mod graph<'a> {
 }
 
 pub fn main() {
-    let arena = TypedArena::new();
+    let arena = Arena::new();
     // The lifetime of the module is inferred here from the lifetime of the
     // reference to the arena, i.e., the scope of the main function.
     let g = graph::init(&arena);
